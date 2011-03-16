@@ -31,7 +31,7 @@ class CcJournalObserver <  ActiveRecord::Observer
       end
     end
     if all
-      users = User.all.map(&:mail)
+      users = User.active.map(&:mail)
     else
       users.map! do |u|
         u = User.find_by_login(u)
