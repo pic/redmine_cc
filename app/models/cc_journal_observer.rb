@@ -6,8 +6,7 @@ class CcJournalObserver <  ActiveRecord::Observer
 
   def after_create(journal)
     journalized = journal.journalized
-    field_name = CcJournalObserver.field_name
-    cv = journalized.custom_values.select {|cv| field_name == cv.custom_field.name}.first
+    cv = journalized.custom_values.select {|c_v| CcJournalObserver.field_name == c_v.custom_field.name}.first
     if cv and !cv.value.blank?
       #journalized.logger.info("would send to #{cv.value}")
       users, emails = extract_rcpts(cv.value)
