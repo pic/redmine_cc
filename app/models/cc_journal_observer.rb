@@ -10,7 +10,19 @@ class CcJournalObserver <  ActiveRecord::Observer
     if cv and !cv.value.blank?
       #journalized.logger.info("would send to #{cv.value}")
       users, emails = extract_rcpts(cv.value)
-      CcMailer.deliver_cc_issue_edit(journal, (users + emails).uniq)
+      cc_recipients = (users + emails).uniq
+      would_send_notifications = false
+      if Setting.notified_events.include?('issue_updated') ||
+         (Setting.notified_events.include?('issue_note_added') && journal.notes.present?) ||
+         (Setting.notified_events.include?('issue_status_updated') && journal.new_status.present?) ||
+         (Setting.notified_events.include?('issue_priority_updated') && journal.new_value_for('priority_id').present?)
+        would_send_notifications = true
+      end
+      if would_send_notifications
+        standard_recipients = (journalized.recipients + journalized.watcher_recipients).uniq
+        cc_recipients -= standard_recipients
+      end
+      CcMailer.deliver_cc_issue_edit(journal, cc_recipients) unless cc_recipients.empty?
       # if you want that users were "sticky", then use watchers instead
       cv.update_attribute(:value, emails.join(', '))
     end

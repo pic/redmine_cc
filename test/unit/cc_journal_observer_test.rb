@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__), '..', 'test_helper')
+require 'mocha'
 
 class CcJournalObserverTest < ActiveSupport::TestCase
 
@@ -15,11 +16,10 @@ class CcJournalObserverTest < ActiveSupport::TestCase
   end
 
   test 'set and retrieve cc custom value' do
-     is = issues(:issues_002)
-     cv = CustomValue.create!(:value => 'admin', :customized => is, :custom_field => @cccf)
-     ris = Issue.find(is.id)
-     rcv = ris.custom_values.select {|cv| 'Cc' == cv.custom_field.name}.first
-     assert_equal 'admin', rcv.value 
+    set_custom_value
+    ris = Issue.find(@is.id)
+    rcv = ris.custom_values.select {|cv| 'Cc' == cv.custom_field.name}.first
+    assert_equal 'rhill', rcv.value
   end 
 
   test 'it extracts recipients' do
@@ -27,6 +27,25 @@ class CcJournalObserverTest < ActiveSupport::TestCase
     users, emails = o.extract_rcpts('rhill p@example.org, doesnotexist admin')
     assert_equal ['rhill@somenet.foo', 'admin@somenet.foo'], users
     assert_equal ['p@example.org'], emails
+  end
+
+  test 'it delivers emails' do
+    set_custom_value
+    CcMailer.expects(:deliver_cc_issue_edit)
+    Journal.create!(:journalized => @is)
+  end
+
+  test 'it doesn\'t deliver email if already sent by standard notification' do
+    set_custom_value
+    Watcher.create(:watchable => @is, :user => User.find_by_login('rhill'))
+    CcMailer.expects(:deliver_cc_issue_edit).never
+    Journal.create!(:journalized => @is)
+  end
+
+  
+  def set_custom_value
+    @is = issues(:issues_002)
+    @cv = CustomValue.create(:value => 'rhill', :customized => @is, :custom_field => @cccf)
   end
 
 end
