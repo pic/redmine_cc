@@ -32,16 +32,23 @@ class CcJournalObserverTest < ActiveSupport::TestCase
   test 'it delivers emails' do
     set_custom_value
     CcMailer.expects(:deliver_cc_issue_edit)
-    Journal.create!(:journalized => @is)
+
+    # without notes, journal skips saving
+    @is.init_journal(User.find_by_login('admin'), 'notes')
+    @is.subject = 'changed'
+    assert @is.save
   end
 
-  test 'it doesn\'t deliver email if already sent by standard notification' do
+  test 'it does not deliver email if already sent by standard notification' do
     set_custom_value
     Watcher.create(:watchable => @is, :user => User.find_by_login('rhill'))
     CcMailer.expects(:deliver_cc_issue_edit).never
-    Journal.create!(:journalized => @is)
-  end
 
+    # without notes, journal skips saving
+    @is.init_journal(User.find_by_login('admin'), 'notes')
+    @is.subject = 'changed'
+    assert @is.save
+  end
   
   def set_custom_value
     @is = issues(:issues_002)

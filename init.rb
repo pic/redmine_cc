@@ -4,7 +4,7 @@ require 'cc_journal_observer'
 
 ActiveRecord::Base.observers << CcJournalObserver
 config.to_prepare do
-  unless config.action_controller.perform_caching
+  unless config.cache_classes
     CcJournalObserver.instance.reload_observer
   end
 end
